@@ -40,7 +40,10 @@ public class CrawlerController {
              * Start the crawl. This is a blocking operation, meaning that your code
              * will reach the line after this only when crawling is finished.
              */
+            long startTime = System.currentTimeMillis();
             controller.start(Crawler.class, numberOfCrawlers);
+            long endTime = System.currentTimeMillis();
+            long totalTime = endTime - startTime;
             
         }
         catch(Exception e)
