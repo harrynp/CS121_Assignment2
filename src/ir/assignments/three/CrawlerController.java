@@ -16,6 +16,7 @@ public class CrawlerController {
         CrawlConfig config = new CrawlConfig();
         config.setCrawlStorageFolder(crawlStorageFolder);
         config.setUserAgentString("David&HarryTestCrawler");
+        config.setPolitenessDelay(600);
 
         /*
          * Instantiate the controller for this crawl.
