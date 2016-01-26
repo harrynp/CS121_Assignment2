@@ -1,5 +1,7 @@
 package ir.assignments.three;
 
+import java.util.concurrent.TimeUnit;
+
 import edu.uci.ics.crawler4j.crawler.CrawlConfig;
 import edu.uci.ics.crawler4j.crawler.CrawlController;
 import edu.uci.ics.crawler4j.fetcher.PageFetcher;
@@ -17,6 +19,8 @@ public class CrawlerController {
         config.setCrawlStorageFolder(crawlStorageFolder);
         config.setUserAgentString("David&HarryTestCrawler");
         config.setPolitenessDelay(600);
+        //Test only 5 pages
+//        config.setMaxPagesToFetch(5);
 
         /*
          * Instantiate the controller for this crawl.
@@ -44,6 +48,11 @@ public class CrawlerController {
             controller.start(Crawler.class, numberOfCrawlers);
             long endTime = System.currentTimeMillis();
             long totalTime = endTime - startTime;
+            
+            System.out.println(String.format("1. %d hours, %d minutes, %d seconds", 
+            		TimeUnit.MILLISECONDS.toHours(totalTime),
+            		TimeUnit.MILLISECONDS.toMinutes(totalTime) - TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(totalTime)),
+            		TimeUnit.MILLISECONDS.toSeconds(totalTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(totalTime))));
             
         }
         catch(Exception e)
