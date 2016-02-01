@@ -1,5 +1,4 @@
 package ir.assignments.three;
-
 import edu.uci.ics.crawler4j.crawler.CrawlConfig;
 import edu.uci.ics.crawler4j.crawler.CrawlController;
 import edu.uci.ics.crawler4j.fetcher.PageFetcher;
@@ -10,8 +9,9 @@ import ir.assignments.three.*;
 public class CrawlerController {
 	
 	public static void main(String[] args) {
+		
 		String crawlStorageFolder = "/data/crawl/root";
-        int numberOfCrawlers = 7;
+        int numberOfCrawlers = 1;
 
         CrawlConfig config = new CrawlConfig();
         config.setCrawlStorageFolder(crawlStorageFolder);
@@ -32,8 +32,8 @@ public class CrawlerController {
              * URLs that are fetched and then the crawler starts following links
              * which are found in these pages
              */
-            controller.addSeed("http://www.ics.uci.edu/~lopes/");
-            controller.addSeed("http://www.ics.uci.edu/~welling/");
+            //controller.addSeed("http://www.ics.uci.edu/~lopes/");
+            //controller.addSeed("http://www.ics.uci.edu/~welling/");
             controller.addSeed("http://www.ics.uci.edu/");
 
             /*
