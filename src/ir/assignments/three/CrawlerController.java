@@ -19,7 +19,7 @@ public class CrawlerController {
         config.setCrawlStorageFolder(crawlStorageFolder);
         config.setUserAgentString("UCI Inf141-CS121 crawler 50765033 79422112");
         config.setPolitenessDelay(600);
-        config.setResumableCrawling(true);
+        config.setResumableCrawling(false);
         config.setMaxDepthOfCrawling(-1);
         //Test only 5 pages
 //        config.setMaxPagesToFetch(5);

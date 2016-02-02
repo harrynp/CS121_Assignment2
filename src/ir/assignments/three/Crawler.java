@@ -32,6 +32,7 @@ public class Crawler extends WebCrawler {
 			+ "|wav|avi|mov|mpeg|ram|m4v|pdf|ps|rm|smil|wmv|swf"
 			+ "|webm|tar|wma|zip?|rar|gz|xz|bz|lz|7z|dmg|xls|xlsx))$");
 	public final static Pattern TRAPS = Pattern.compile("^http://(archive|calendar)\\.ics\\.uci\\.edu/.*");
+	public final static Pattern DOMAIN = Pattern.compile("^http://.*\\.ics\\.uci\\.edu/.*");
     static ArrayList<String> urlList = new ArrayList<String>();
     
     static String crawlStorageFolder = "/data/crawl/root";
@@ -170,8 +171,9 @@ public class Crawler extends WebCrawler {
 	public boolean shouldVisit(Page referringPage, WebURL url) {
         String href = url.getURL().toLowerCase();
         return !FILTERS.matcher(href).matches()
-               && href.startsWith("http://www.ics.uci.edu/")
-               && !TRAPS.matcher(href).matches();
+//               && href.startsWith("http://www.ics.uci.edu/")
+               && !TRAPS.matcher(href).matches()
+               && DOMAIN.matcher(href).matches();
 	}
 	
 	//recursive creates a file with a unique file name if a collision occurs. Returns pathname
