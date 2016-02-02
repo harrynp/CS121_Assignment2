@@ -27,8 +27,9 @@ import java.util.TreeSet;
 import java.util.Iterator;
 
 public class Crawler extends WebCrawler {
-    private final static Pattern FILTERS = Pattern.compile(".*(\\.(css|js|gif|jpg"
-                                                           + "|php?|png|mp3|mp3|zip|gz))$");
+    private final static Pattern FILTERS = Pattern.compile(".*(\\.(css|js|bmp|gif|jpe?g|png|tiff?|mid|mp2|mp3|mp4"
+			+ "|wav|avi|mov|mpeg|ram|m4v|pdf|ps|rm|smil|wmv|swf"
+			+ "|webm|tar|wma|zip|rar|gz|xz|bz|lz|7z|dmg|xls|xlsx))$");
     static ArrayList<String> urlList = new ArrayList<String>();
     
     static String crawlStorageFolder = "/data/crawl/root";
