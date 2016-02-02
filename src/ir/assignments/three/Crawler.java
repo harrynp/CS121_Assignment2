@@ -31,13 +31,13 @@ public class Crawler extends WebCrawler {
                                                            + "|php?|png|mp3|mp3|zip|gz))$");
     static ArrayList<String> urlList = new ArrayList<String>();
     
-    String crawlStorageFolder = "/data/crawl/root";
+    static String crawlStorageFolder = "/data/crawl/root";
 	String textFilesPath = "/data/crawl/root/urlTextFiles";
-	
-	String longestPageName = "";
-	int longestPageLength = 0;
-	HashMap<String,Integer> freqMap = new HashMap<String,Integer>();
-	TreeSet<Frequency> freqSet = null;
+	static int crawlCount = 0;
+	static String longestPageName = "";
+	static int longestPageLength = 0;
+	static HashMap<String,Integer> freqMap = new HashMap<String,Integer>();
+	static TreeSet<Frequency> freqSet = null;
 	
 	/**
 	 * This method is for testing purposes only. It does not need to be used
@@ -138,6 +138,8 @@ public class Crawler extends WebCrawler {
 	        //I chose to store the token frequencies in a map first because checking for existing words, adding new ones
 	        //	or incrementing are all O(1) operations
 	        for(String token : tokenList) {
+	        	
+	        	
 	        	Integer count = freqMap.get(token);
 	        	if(count == null) {
 	        		freqMap.put(token, 1);
@@ -152,7 +154,8 @@ public class Crawler extends WebCrawler {
 	        //freqSet = getSortedFrequencies(freqMap);
 	        //createCommonWordFile(freqSet);   
 	        //-------------------------------------------------------------------------
-	       
+	       System.out.println("Map size: " + freqMap.size());
+	       System.out.println("crawlCount: " + ++crawlCount);
 	    }
 	}
 	
@@ -192,7 +195,7 @@ public class Crawler extends WebCrawler {
 	        return null;
 	}
 	
-	private TreeSet<Frequency> getSortedFrequencies(HashMap<String,Integer> freqMap) {
+	private static TreeSet<Frequency> getSortedFrequencies(HashMap<String,Integer> freqMap) {
         TreeSet<Frequency> freqSet = new TreeSet<Frequency>(frequencySetComparator);
         
         if(freqMap == null){
@@ -234,7 +237,7 @@ public class Crawler extends WebCrawler {
 		}  
 	};
 	
-	private void createAnswerFile() {
+	public static void createAnswerFile() {
 		System.out.println("LongestPage: " + longestPageName);
 		System.out.println("	word cound: " + longestPageLength);
 		System.out.println("visited pages: " + urlList.size());
@@ -256,7 +259,7 @@ public class Crawler extends WebCrawler {
 		}
 	}
 	
-	private void createCommonWordFile(TreeSet<Frequency> freqSet){
+	public static void createCommonWordFile(TreeSet<Frequency> freqSet){
 		File commonFile = new File(crawlStorageFolder + "/CommonWords.txt");
 		try {
 			PrintWriter writer = new PrintWriter(commonFile);
