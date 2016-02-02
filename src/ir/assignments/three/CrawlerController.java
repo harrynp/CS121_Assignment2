@@ -17,7 +17,7 @@ public class CrawlerController {
 
         CrawlConfig config = new CrawlConfig();
         config.setCrawlStorageFolder(crawlStorageFolder);
-        config.setUserAgentString("David&HarryTestCrawler");
+        config.setUserAgentString("UCI Inf141-CS121 crawler 50765033 79422112");
         config.setPolitenessDelay(600);
         //Test only 5 pages
 //        config.setMaxPagesToFetch(5);
