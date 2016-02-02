@@ -46,7 +46,7 @@ public class Utilities {
                         String[] lineArray = line.split("[\\W]+");
                         
                         for(String token : lineArray){
-                        	if(token.compareTo("") != 0) // need to fix regex to ignore leading empty string
+                        	if(token.compareTo("") != 0) 
                         	{
                         		tokenList.add(token.toLowerCase());
                         	}

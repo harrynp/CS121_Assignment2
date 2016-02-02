@@ -25,11 +25,12 @@ import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.TreeSet;
 import java.util.Iterator;
+import java.util.Scanner;
 
 public class Crawler extends WebCrawler {
     private final static Pattern FILTERS = Pattern.compile(".*(\\.(css|js|bmp|gif|jpe?g|png|tiff?|mid|mp2|mp3|mp4"
 			+ "|wav|avi|mov|mpeg|ram|m4v|pdf|ps|rm|smil|wmv|swf"
-			+ "|webm|tar|wma|zip|rar|gz|xz|bz|lz|7z|dmg|xls|xlsx))$");
+			+ "|webm|tar|wma|zip?|rar|gz|xz|bz|lz|7z|dmg|xls|xlsx))$");
     static ArrayList<String> urlList = new ArrayList<String>();
     
     static String crawlStorageFolder = "/data/crawl/root";
@@ -39,6 +40,7 @@ public class Crawler extends WebCrawler {
 	static int longestPageLength = 0;
 	static HashMap<String,Integer> freqMap = new HashMap<String,Integer>();
 	static TreeSet<Frequency> freqSet = null;
+	ArrayList<String> stopList = new ArrayList<String>();
 	
 	/**
 	 * This method is for testing purposes only. It does not need to be used
@@ -97,6 +99,8 @@ public class Crawler extends WebCrawler {
 		file.mkdirs();
 		System.out.println("onStart");
 		
+		File stopFile = new File("stopwords.txt");
+		stopList = Utilities.tokenizeFile(stopFile);
 	}
 	
 	public void onBeforeExit()
@@ -139,14 +143,14 @@ public class Crawler extends WebCrawler {
 	        //I chose to store the token frequencies in a map first because checking for existing words, adding new ones
 	        //	or incrementing are all O(1) operations
 	        for(String token : tokenList) {
-	        	
-	        	
-	        	Integer count = freqMap.get(token);
-	        	if(count == null) {
-	        		freqMap.put(token, 1);
-	        	}
-	        	else {
-	        		freqMap.put(token, ++count);
+	        	if(!stopList.contains(token)) {
+	        		Integer count = freqMap.get(token);
+		        	if(count == null) {
+		        		freqMap.put(token, 1);
+		        	}
+		        	else {
+		        		freqMap.put(token, ++count);
+		        	}
 	        	}
 	        }
 	        
