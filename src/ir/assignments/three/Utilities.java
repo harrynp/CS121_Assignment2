@@ -58,4 +58,40 @@ public class Utilities {
 		return result;
 
 	}
+	
+	public static ArrayList<String> tokenizeIgnoreUrl(File input) {
+		// TODO Write body!
+		ArrayList<String> result = new ArrayList<String>();
+		if(input == null || input.length() == 0){
+			return result;
+		}
+		Scanner scanner = null;
+		try {
+			scanner = new Scanner(input);
+			String line = null;
+			
+			//Ignore the first line since its a url we added to index files later
+			if(scanner.hasNextLine()) {
+				line = scanner.nextLine();
+			}
+			
+			while(scanner.hasNextLine()){
+				line = scanner.nextLine();
+				if(!line.isEmpty()){
+					line = line.replaceAll("[^a-zA-Z]+", " ").toLowerCase();
+					Collections.addAll(result, line.trim().split(" "));
+				}
+			}
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		finally{
+			if(scanner!= null){
+				scanner.close();
+			}
+		}
+		return result;
+
+	}
 }

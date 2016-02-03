@@ -7,8 +7,10 @@ import java.util.regex.Pattern;
 
 import com.sun.javafx.collections.MappingChange.Map;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 
@@ -21,6 +23,7 @@ import edu.uci.ics.crawler4j.parser.HtmlParseData;
 import edu.uci.ics.crawler4j.robotstxt.RobotstxtConfig;
 import edu.uci.ics.crawler4j.robotstxt.RobotstxtServer;
 import edu.uci.ics.crawler4j.url.WebURL;
+
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.TreeSet;
@@ -38,13 +41,18 @@ public class Crawler extends WebCrawler {
     static String crawlStorageFolder = "/data/crawl/root";
 	String textFilesPath = "/data/crawl/root/urlTextFiles";
 	static int crawlCount = 0;
+	static int uniqueCount = 0;
+	static long startTime = 0;
+	static long totalTime = 0;
 	static String longestPageName = "";
 	static int longestPageLength = 0;
-	static HashMap<String,Integer> freqMap = new HashMap<String,Integer>();
+	static HashMap<String,Integer> freqMap = null;
 	static HashMap<String,Integer> subdomainFreqMap = new HashMap<String,Integer>();
 	static TreeSet<Frequency> freqSet = null;
 	static TreeSet<Frequency> subdomainFreqSet = null;
 	ArrayList<String> stopList = new ArrayList<String>();
+	private static boolean crawlTest = false;
+	private static boolean fetching = false;
 	
 	/**
 	 * This method is for testing purposes only. It does not need to be used
@@ -99,20 +107,100 @@ public class Crawler extends WebCrawler {
 	}
 	
 	public void onStart() {
-		File file = new File(textFilesPath);
-		file.mkdirs();
-		System.out.println("onStart");
-		
-		File stopFile = new File("stopwords.txt");
-		stopList = Utilities.tokenizeFile(stopFile);
+		if(!crawlTest) {
+			File file = new File(textFilesPath);
+			file.mkdirs();
+			System.out.println("onStart");
+			
+			try {
+				File questionFile = new File(crawlStorageFolder + "/questions.txt");
+				
+				if(!questionFile.createNewFile()) {
+					FileReader reader = new FileReader(questionFile);
+					BufferedReader bufferedReader = new BufferedReader(reader);
+					totalTime = Long.parseLong(bufferedReader.readLine(), 10);
+					uniqueCount = Integer.parseInt(bufferedReader.readLine());
+					longestPageName = bufferedReader.readLine();
+					longestPageLength = Integer.parseInt(bufferedReader.readLine());
+					reader.close();
+					bufferedReader.close();
+				}
+				else {
+					PrintWriter writer = new PrintWriter(questionFile);
+					writer.println(totalTime);
+					writer.println(uniqueCount);
+					writer.println(longestPageName);
+					writer.println(longestPageLength);
+					writer.close();
+				}
+
+				File stopFile = new File("stopwords.txt");
+				stopList = Utilities.tokenizeFile(stopFile);
+				
+				if(freqMap == null) {
+					freqMap = new HashMap<String,Integer>();
+					File[] fileArray = file.listFiles();
+					fetching = true;
+					for(File textFile : fileArray) {
+						FileReader reader = new FileReader(textFile);
+						BufferedReader bufferedReader = new BufferedReader(reader);
+						String url = bufferedReader.readLine();
+						String subdomain = url.substring(7, url.indexOf(".edu") + 4);
+					    Integer subdomainCount = subdomainFreqMap.get(subdomain);
+					    if(subdomainCount == null){
+					    	subdomainFreqMap.put(subdomain, 1);
+					    }
+					    else{
+					    	subdomainFreqMap.put(subdomain, ++subdomainCount);
+					    	//System.out.println(subdomain + " " + subdomainCount);
+					    }
+						
+						reader.close();
+						bufferedReader.close();
+						
+						ArrayList<String> tokenList = Utilities.tokenizeIgnoreUrl(textFile);
+						for(String token : tokenList) {
+				        	if(!stopList.contains(token)) {
+				        		Integer count = freqMap.get(token);
+					        	if(count == null) {
+					        		freqMap.put(token, 1);
+					        	}
+					        	else {
+					        		freqMap.put(token, ++count);
+					        	}
+				        	}
+				        }
+					}
+					fetching = false;
+					System.out.println("thread");
+					createAnswerFile();
+					TreeSet<Frequency> subdomainSet = getSortedFrequencies(subdomainFreqMap, frequencyStringComparator);
+					createSubdomainsFile(subdomainSet);
+					subdomainSet.clear();	//Freeing some memory just in case
+					TreeSet<Frequency> commonSet = getSortedFrequencies(freqMap, frequencySetComparator);
+			        createCommonWordFile(commonSet);
+			        commonSet.clear();
+				}
+				
+				
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+	        
+			startTime = System.currentTimeMillis();
+		}
 	}
 	
 	public void onBeforeExit()
 	{
 		createAnswerFile();
-		subdomainFreqSet = getSortedFrequencies(subdomainFreqMap);
+		subdomainFreqSet = getSortedFrequencies(subdomainFreqMap, frequencyStringComparator);
 		createSubdomainsFile(subdomainFreqSet);
-        freqSet = getSortedFrequencies(freqMap);
+        freqSet = getSortedFrequencies(freqMap, frequencySetComparator);
         createCommonWordFile(freqSet);
 	}
 	
@@ -120,65 +208,85 @@ public class Crawler extends WebCrawler {
 	public void visit(Page page) {
 	    String url = page.getWebURL().getURL();
 	    urlList.add(url);
-	    String subdomain = url.substring(7, url.indexOf(".edu") + 4);
-//	    String subdomain = url.substring(url.indexOf("http://") + 7, url.indexOf(".edu") - url.indexOf("http://") + 4);
-	    Integer subdomainCount = subdomainFreqMap.get(subdomain);
-	    if(subdomainCount == null){
-	    	subdomainFreqMap.put(subdomain, 1);
-	    }
-	    else{
-	    	subdomainFreqMap.put(subdomain, ++subdomainCount);
+	    if(!crawlTest) {
+	    	++uniqueCount;
+		    String subdomain = url.substring(7, url.indexOf(".edu") + 4);
+//		    String subdomain = url.substring(url.indexOf("http://") + 7, url.indexOf(".edu") - url.indexOf("http://") + 4);
+		    Integer subdomainCount = subdomainFreqMap.get(subdomain);
+		    if(subdomainCount == null){
+		    	subdomainFreqMap.put(subdomain, 1);
+		    }
+		    else{
+		    	subdomainFreqMap.put(subdomain, ++subdomainCount);
+		    }
+		    
+		    System.out.println("\nURL: " + url);
+		    System.out.println("Subdomain: " + subdomain);
+		    System.out.println("ID: " + url.hashCode());
+		   
+		
+		    if (page.getParseData() instanceof HtmlParseData) {
+		        HtmlParseData htmlParseData = (HtmlParseData) page.getParseData();
+		        String text = htmlParseData.getText();
+		        String html = htmlParseData.getHtml();
+		        Set<WebURL> links = htmlParseData.getOutgoingUrls();
+		
+		        System.out.println("Text length: " + text.length());
+		        System.out.println("Html length: " + html.length());
+		        System.out.println("Number of outgoing links: " + links.size());
+		        
+		        //Create text file and store contents of page in it
+		        File file = createUrlFile(url,text, 0);
+		        ArrayList<String> tokenList = Utilities.tokenizeIgnoreUrl(file);
+		        
+		        long visitTime = System.currentTimeMillis();
+		        totalTime = totalTime + (visitTime - startTime);
+		        startTime = visitTime;
+		        
+		        if(tokenList.size() > longestPageLength)
+		        {
+		        	longestPageName = url;
+		        	longestPageLength = tokenList.size();
+		        }
+		        
+		        File questionFile = new File(crawlStorageFolder + "/questions.txt");
+				try {
+					
+					PrintWriter writer = new PrintWriter(questionFile);
+					writer.println(totalTime);
+					writer.println(uniqueCount);
+					writer.println(longestPageName);
+					writer.println(longestPageLength);
+					writer.close();
+				} catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+		        //I chose to store the token frequencies in a map first because checking for existing words, adding new ones
+		        //	or incrementing are all O(1) operations
+		        for(String token : tokenList) {
+		        	if(!stopList.contains(token)) {
+		        		Integer count = freqMap.get(token);
+			        	if(count == null) {
+			        		freqMap.put(token, 1);
+			        	}
+			        	else {
+			        		freqMap.put(token, ++count);
+			        	}
+		        	}
+		        }
+		        
+				//TESTING freqMap --------------------------------------------------------
+		        //createAnswerFile();
+		        //freqSet = getSortedFrequencies(freqMap);
+		        //createCommonWordFile(freqSet);   
+		        //-------------------------------------------------------------------------
+		       System.out.println("Subdomain Map Size: " + subdomainFreqMap.size());
+		       System.out.println("Map size: " + freqMap.size());
+		       System.out.println("crawlCount: " + ++crawlCount);
+		    }
 	    }
 	    
-	    System.out.println("\nURL: " + url);
-	    System.out.println("Subdomain: " + subdomain);
-	    System.out.println("ID: " + url.hashCode());
-	   
-	
-	    if (page.getParseData() instanceof HtmlParseData) {
-	        HtmlParseData htmlParseData = (HtmlParseData) page.getParseData();
-	        String text = htmlParseData.getText();
-	        String html = htmlParseData.getHtml();
-	        Set<WebURL> links = htmlParseData.getOutgoingUrls();
-	
-	        System.out.println("Text length: " + text.length());
-	        System.out.println("Html length: " + html.length());
-	        System.out.println("Number of outgoing links: " + links.size());
-	        
-	        //Create text file and store contents of page in it
-	        File file = createUrlFile(url,text, 0);
-	        
-	        ArrayList<String> tokenList = Utilities.tokenizeFile(file);
-	        
-	        if(tokenList.size() > longestPageLength)
-	        {
-	        	longestPageName = url;
-	        	longestPageLength = tokenList.size();
-	        }
-	        
-	        //I chose to store the token frequencies in a map first because checking for existing words, adding new ones
-	        //	or incrementing are all O(1) operations
-	        for(String token : tokenList) {
-	        	if(!stopList.contains(token)) {
-	        		Integer count = freqMap.get(token);
-		        	if(count == null) {
-		        		freqMap.put(token, 1);
-		        	}
-		        	else {
-		        		freqMap.put(token, ++count);
-		        	}
-	        	}
-	        }
-	        
-			//TESTING freqMap --------------------------------------------------------
-	        //createAnswerFile();
-	        //freqSet = getSortedFrequencies(freqMap);
-	        //createCommonWordFile(freqSet);   
-	        //-------------------------------------------------------------------------
-	       System.out.println("Subdomain Map Size: " + subdomainFreqMap.size());
-	       System.out.println("Map size: " + freqMap.size());
-	       System.out.println("crawlCount: " + ++crawlCount);
-	    }
 	}
 	
 	
@@ -218,8 +326,9 @@ public class Crawler extends WebCrawler {
 	        return null;
 	}
 	
-	private static TreeSet<Frequency> getSortedFrequencies(HashMap<String,Integer> freqMap) {
-        TreeSet<Frequency> freqSet = new TreeSet<Frequency>(frequencySetComparator);
+	private static TreeSet<Frequency> getSortedFrequencies(HashMap<String,Integer> freqMap, 
+														   Comparator<Frequency> comp) {
+        TreeSet<Frequency> freqSet = new TreeSet<Frequency>(comp);
         
         if(freqMap == null){
             return freqSet;
@@ -233,6 +342,71 @@ public class Crawler extends WebCrawler {
         }
         
 		return freqSet;
+	}
+	
+	public static void createAnswerFile() {
+		System.out.println("LongestPage: " + longestPageName);
+		System.out.println("	word count: " + longestPageLength);
+		System.out.println("visited pages: " + uniqueCount);
+		File answerFile = new File(crawlStorageFolder + "/Answers.txt");
+
+		try {
+			PrintWriter writer = new PrintWriter(answerFile);
+			writer.println("Question 1: How much time did it take to crawl the entire domain?");
+			writer.println("\t" + totalTime);
+			writer.println("Question 2: How many unique pages did you find in the entire domain?");
+			writer.println("\t" + uniqueCount);
+			//	This questions will be answered separately on SubDomains.txt
+			//writer.println("Question 3: How many subdomains did you find?");
+			//writer.println("\t" + subdomainFreqMap.size());
+			writer.println("Question 4: What is the longest page in terms of number of words? ");
+			writer.println("\t" + longestPageName);
+			
+			writer.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public static void createCommonWordFile(TreeSet<Frequency> freqSet){
+		File commonFile = new File(crawlStorageFolder + "/CommonWords.txt");
+		try {
+			PrintWriter writer = new PrintWriter(commonFile);
+			
+			int wordCount = 0;
+			for(Frequency freq : freqSet) {
+				//Ignore empty string for ranking
+				if(freq.getText().compareTo("") != 0) {
+					writer.println(freq);
+					
+					wordCount++;
+					if(wordCount >= 500){
+						break;
+					}
+				}
+			}
+			
+			writer.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public static void createSubdomainsFile(TreeSet<Frequency> subdomainFreqSet){
+		File subdomainsFile = new File(crawlStorageFolder + "/Subdomains.txt");
+		try {
+			PrintWriter writer = new PrintWriter(subdomainsFile);
+			for(Frequency freq : subdomainFreqSet) {
+				writer.println(freq.getText() + ", " + freq.getFrequency());
+			}
+			
+			writer.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	private static Comparator<Frequency> frequencySetComparator = new Comparator<Frequency>(){
@@ -260,64 +434,15 @@ public class Crawler extends WebCrawler {
 		}  
 	};
 	
-	public static void createAnswerFile() {
-		System.out.println("LongestPage: " + longestPageName);
-		System.out.println("	word count: " + longestPageLength);
-		System.out.println("visited pages: " + urlList.size());
-		File answerFile = new File(crawlStorageFolder + "/Answers.txt");
-
-		try {
-			PrintWriter writer = new PrintWriter(answerFile);
-			writer.println("Question 1: How much time did it take to crawl the entire domain?");
-			writer.println("\t  Not finished");
-			writer.println("Question 2: How many unique pages did you find in the entire domain?");
-			writer.println("\t" + urlList.size());
-			writer.println("Question 3: How many subdomains did you find?");
-			writer.println("\t" + subdomainFreqMap.size());
-			writer.println("Question 4: What is the longest page in terms of number of words? ");
-			writer.println("\t" + longestPageName);
+	private static Comparator<Frequency> frequencyStringComparator = new Comparator<Frequency>(){
+		public int compare(Frequency freq1, Frequency freq2){
+			String textCount1 = freq1.getText().toUpperCase();
+			String textCount2 = freq2.getText().toUpperCase();
 			
-			writer.close();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-	
-	public static void createCommonWordFile(TreeSet<Frequency> freqSet){
-		File commonFile = new File(crawlStorageFolder + "/CommonWords.txt");
-		try {
-			PrintWriter writer = new PrintWriter(commonFile);
-			
-			int wordCount = 0;
-			for(Frequency freq : freqSet) {
-				writer.println(freq);
-				
-				wordCount++;
-				if(wordCount >= 500){
-					break;
-				}
-			}
-			
-			writer.close();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-	
-	public static void createSubdomainsFile(TreeSet<Frequency> subdomainFreqSet){
-		File subdomainsFile = new File(crawlStorageFolder + "/Subdomains.txt");
-		try {
-			PrintWriter writer = new PrintWriter(subdomainsFile);
-			for(Frequency freq : subdomainFreqSet) {
-				writer.println(freq.getText() + ", " + freq.getFrequency());
-			}
-			
-			writer.close();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
+			//If the words are the same we consider them equal in value regardless of frequency. 
+			//	This will make it so no frequencies with duplicate words are added to the set.
+			return textCount1.compareTo(textCount2);
+		
+		}  
+	};
 }
