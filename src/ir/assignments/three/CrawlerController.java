@@ -13,11 +13,12 @@ public class CrawlerController {
 	
 	public static void main(String[] args) {
 		String crawlStorageFolder = "/data/crawl/root";
-        int numberOfCrawlers = 7;
+        int numberOfCrawlers = 8;
 
         CrawlConfig config = new CrawlConfig();
         config.setCrawlStorageFolder(crawlStorageFolder);
-        config.setUserAgentString("UCI Inf141-CS121 crawler 50765033 79422112");
+//        config.setUserAgentString("UCI Inf141-CS121 crawler 50765033 79422112");
+      config.setUserAgentString("test");
         config.setPolitenessDelay(600);
         config.setResumableCrawling(false);
         config.setMaxDepthOfCrawling(-1);
@@ -38,8 +39,8 @@ public class CrawlerController {
              * URLs that are fetched and then the crawler starts following links
              * which are found in these pages
              */
-            controller.addSeed("http://www.ics.uci.edu/~lopes/");
-            controller.addSeed("http://www.ics.uci.edu/~welling/");
+//            controller.addSeed("http://www.ics.uci.edu/~lopes/");
+//            controller.addSeed("http://www.ics.uci.edu/~welling/");
             controller.addSeed("http://www.ics.uci.edu/");
 
             /*

@@ -1,10 +1,9 @@
 package ir.assignments.three;
 
-
-import java.io.File;
 import java.io.*;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
+import java.util.Scanner;
 
 /**
  * A collection of utility methods for text processing.
@@ -32,106 +31,31 @@ public class Utilities {
 	 */
 	public static ArrayList<String> tokenizeFile(File input) {
 		// TODO Write body!
-                ArrayList<String> tokenList = new ArrayList<String>();
-                
-                try
-                {
-                    FileReader reader = new FileReader(input);
-                    BufferedReader bufferedReader = new BufferedReader(reader);
-                    
-                    for(String line = bufferedReader.readLine(); 
-                        line != null; 
-                        line = bufferedReader.readLine()) {
-                        
-                        String[] lineArray = line.split("[\\W]+");
-                        
-                        for(String token : lineArray){
-                        	if(token.compareTo("") != 0) 
-                        	{
-                        		tokenList.add(token.toLowerCase());
-                        	}
-                        }
-                    }
-                    
-                }
-                catch(Exception e){
-                    
-                };
-                
-		return tokenList;
-	}
-	
-	/**
-	 * Takes a list of {@link Frequency}s and prints it to standard out. It also
-	 * prints out the total number of items, and the total number of unique items.
-	 * 
-	 * Example one:
-	 * 
-	 * Given the input list of word frequencies
-	 * ["sentence:2", "the:1", "this:1", "repeats:1",  "word:1"]
-	 * 
-	 * The following should be printed to standard out
-	 * 
-	 * Total item count: 6
-	 * Unique item count: 5
-	 * 
-	 * sentence	2
-	 * the		1
-	 * this		1
-	 * repeats	1
-	 * word		1
-	 * 
-	 * 
-	 * Example two:
-	 * 
-	 * Given the input list of 2-gram frequencies
-	 * ["you think:2", "how you:1", "know how:1", "think you:1", "you know:1"]
-	 * 
-	 * The following should be printed to standard out
-	 * 
-	 * Total 2-gram count: 6
-	 * Unique 2-gram count: 5
-	 * 
-	 * you think	2
-	 * how you		1
-	 * know how		1
-	 * think you	1
-	 * you know		1
-	 * 
-	 * @param frequencies A list of frequencies.
-	 */
-	public static void printFrequencies(List<Frequency> frequencies) {
-            int uniqueCount = frequencies.size();
-            int totalCount = 0;
-            
-            for(Frequency freq : frequencies){
-                totalCount = totalCount + freq.getFrequency();
-            }
-            
-            if(frequencies != null && frequencies.size() != 0)
-            {
-                int spc = frequencies.get(0).getText().indexOf(' ');
+		ArrayList<String> result = new ArrayList<String>();
+		if(input == null || input.length() == 0){
+			return result;
+		}
+		Scanner scanner = null;
+		try {
+			scanner = new Scanner(input);
+			String line = null;
+			while(scanner.hasNextLine()){
+				line = scanner.nextLine();
+				if(!line.isEmpty()){
+					line = line.replaceAll("[^a-zA-Z]+", " ").toLowerCase();
+					Collections.addAll(result, line.trim().split(" "));
+				}
+			}
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		finally{
+			if(scanner!= null){
+				scanner.close();
+			}
+		}
+		return result;
 
-                if(spc == -1)
-                {
-                     System.out.print("Total item count: " + totalCount);
-                     System.out.print("\nUnique item count: " + uniqueCount);
-                }
-                else
-                {
-                    System.out.print("Total 2-gram count: " + totalCount);
-                    System.out.print("\nUnique 2-gram count: " + uniqueCount);
-                }
-
-                System.out.print("\n\n");
-
-                for(Frequency freq : frequencies){
-                    System.out.print(freq.getText() + '\t' + freq.getFrequency() + '\n');
-                }
-
-                System.out.print('\n');
-            }
-            
-            
 	}
 }

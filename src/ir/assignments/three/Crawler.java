@@ -29,8 +29,8 @@ import java.util.Scanner;
 
 public class Crawler extends WebCrawler {
     private final static Pattern FILTERS = Pattern.compile(".*(\\.(css|js|bmp|gif|jpe?g|png|tiff?|mid|mp2|mp3|mp4"
-			+ "|wav|avi|mov|mpeg|ram|m4v|pdf|ps|rm|smil|wmv|swf"
-			+ "|webm|tar|wma|zip?|rar|gz|xz|bz|lz|7z|dmg|xls|xlsx))$");
+														+ "|wav|avi|mov|mpeg|ram|m4v|pdf|ps|rm|smil|wmv|swf|tgz|war"
+														+ "|webm|tar|wma|zip?|rar|gz|xz|bz|lz|7z|dmg|xls|xlsx))$");
 	public final static Pattern TRAPS = Pattern.compile("^http://(archive|calendar)\\.ics\\.uci\\.edu/.*");
 	public final static Pattern DOMAIN = Pattern.compile("^http://.*\\.ics\\.uci\\.edu/.*");
     static ArrayList<String> urlList = new ArrayList<String>();
@@ -41,7 +41,9 @@ public class Crawler extends WebCrawler {
 	static String longestPageName = "";
 	static int longestPageLength = 0;
 	static HashMap<String,Integer> freqMap = new HashMap<String,Integer>();
+	static HashMap<String,Integer> subdomainFreqMap = new HashMap<String,Integer>();
 	static TreeSet<Frequency> freqSet = null;
+	static TreeSet<Frequency> subdomainFreqSet = null;
 	ArrayList<String> stopList = new ArrayList<String>();
 	
 	/**
@@ -54,42 +56,42 @@ public class Crawler extends WebCrawler {
 	 */
 	public static Collection<String> crawl(String seedURL) {
 		// TODO implement me
-        int numberOfCrawlers = 1;
-
-        CrawlConfig config = new CrawlConfig();
-        //config.setCrawlStorageFolder(crawlStorageFolder);
-        config.setUserAgentString("UCI Inf141-CS121 crawler 50765033");
-        config.setPolitenessDelay(600);
-
-        /*
-         * Instantiate the controller for this crawl.
-         */
-        PageFetcher pageFetcher = new PageFetcher(config);
-        RobotstxtConfig robotstxtConfig = new RobotstxtConfig();
-        RobotstxtServer robotstxtServer = new RobotstxtServer(robotstxtConfig, pageFetcher);
-        
-        try{
-        	CrawlController controller = new CrawlController(config, pageFetcher, robotstxtServer);
-        	/*
-             * For each crawl, you need to add some seed urls. These are the first
-             * URLs that are fetched and then the crawler starts following links
-             * which are found in these pages
-             */
-            //controller.addSeed("http://www.ics.uci.edu/~lopes/");
-            //controller.addSeed("http://www.ics.uci.edu/~welling/");
-            controller.addSeed("http://www.ics.uci.edu/");
-
-            /*
-             * Start the crawl. This is a blocking operation, meaning that your code
-             * will reach the line after this only when crawling is finished.
-             */
-            controller.start(Crawler.class, numberOfCrawlers);
-            
-        }
-        catch(Exception e)
-        {
-        	
-        };
+//        int numberOfCrawlers = 1;
+//
+//        CrawlConfig config = new CrawlConfig();
+//        //config.setCrawlStorageFolder(crawlStorageFolder);
+//        config.setUserAgentString("UCI Inf141-CS121 crawler 50765033");
+//        config.setPolitenessDelay(600);
+//
+//        /*
+//         * Instantiate the controller for this crawl.
+//         */
+//        PageFetcher pageFetcher = new PageFetcher(config);
+//        RobotstxtConfig robotstxtConfig = new RobotstxtConfig();
+//        RobotstxtServer robotstxtServer = new RobotstxtServer(robotstxtConfig, pageFetcher);
+//        
+//        try{
+//        	CrawlController controller = new CrawlController(config, pageFetcher, robotstxtServer);
+//        	/*
+//             * For each crawl, you need to add some seed urls. These are the first
+//             * URLs that are fetched and then the crawler starts following links
+//             * which are found in these pages
+//             */
+//            //controller.addSeed("http://www.ics.uci.edu/~lopes/");
+//            //controller.addSeed("http://www.ics.uci.edu/~welling/");
+//            controller.addSeed("http://www.ics.uci.edu/");
+//
+//            /*
+//             * Start the crawl. This is a blocking operation, meaning that your code
+//             * will reach the line after this only when crawling is finished.
+//             */
+//            controller.start(Crawler.class, numberOfCrawlers);
+//            
+//        }
+//        catch(Exception e)
+//        {
+//        	
+//        };
 
         
 		
@@ -108,16 +110,28 @@ public class Crawler extends WebCrawler {
 	public void onBeforeExit()
 	{
 		createAnswerFile();
+		subdomainFreqSet = getSortedFrequencies(subdomainFreqMap);
+		createSubdomainsFile(subdomainFreqSet);
         freqSet = getSortedFrequencies(freqMap);
-        createCommonWordFile(freqSet);   
+        createCommonWordFile(freqSet);
 	}
 	
 	@Override
 	public void visit(Page page) {
 	    String url = page.getWebURL().getURL();
 	    urlList.add(url);
+	    String subdomain = url.substring(7, url.indexOf(".edu") + 4);
+//	    String subdomain = url.substring(url.indexOf("http://") + 7, url.indexOf(".edu") - url.indexOf("http://") + 4);
+	    Integer subdomainCount = subdomainFreqMap.get(subdomain);
+	    if(subdomainCount == null){
+	    	subdomainFreqMap.put(subdomain, 1);
+	    }
+	    else{
+	    	subdomainFreqMap.put(subdomain, ++subdomainCount);
+	    }
 	    
 	    System.out.println("\nURL: " + url);
+	    System.out.println("Subdomain: " + subdomain);
 	    System.out.println("ID: " + url.hashCode());
 	   
 	
@@ -161,6 +175,7 @@ public class Crawler extends WebCrawler {
 	        //freqSet = getSortedFrequencies(freqMap);
 	        //createCommonWordFile(freqSet);   
 	        //-------------------------------------------------------------------------
+	       System.out.println("Subdomain Map Size: " + subdomainFreqMap.size());
 	       System.out.println("Map size: " + freqMap.size());
 	       System.out.println("crawlCount: " + ++crawlCount);
 	    }
@@ -171,7 +186,6 @@ public class Crawler extends WebCrawler {
 	public boolean shouldVisit(Page referringPage, WebURL url) {
         String href = url.getURL().toLowerCase();
         return !FILTERS.matcher(href).matches()
-//               && href.startsWith("http://www.ics.uci.edu/")
                && !TRAPS.matcher(href).matches()
                && DOMAIN.matcher(href).matches();
 	}
@@ -248,7 +262,7 @@ public class Crawler extends WebCrawler {
 	
 	public static void createAnswerFile() {
 		System.out.println("LongestPage: " + longestPageName);
-		System.out.println("	word cound: " + longestPageLength);
+		System.out.println("	word count: " + longestPageLength);
 		System.out.println("visited pages: " + urlList.size());
 		File answerFile = new File(crawlStorageFolder + "/Answers.txt");
 
@@ -258,6 +272,8 @@ public class Crawler extends WebCrawler {
 			writer.println("\t  Not finished");
 			writer.println("Question 2: How many unique pages did you find in the entire domain?");
 			writer.println("\t" + urlList.size());
+			writer.println("Question 3: How many subdomains did you find?");
+			writer.println("\t" + subdomainFreqMap.size());
 			writer.println("Question 4: What is the longest page in terms of number of words? ");
 			writer.println("\t" + longestPageName);
 			
@@ -281,6 +297,21 @@ public class Crawler extends WebCrawler {
 				if(wordCount >= 500){
 					break;
 				}
+			}
+			
+			writer.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public static void createSubdomainsFile(TreeSet<Frequency> subdomainFreqSet){
+		File subdomainsFile = new File(crawlStorageFolder + "/Subdomains.txt");
+		try {
+			PrintWriter writer = new PrintWriter(subdomainsFile);
+			for(Frequency freq : subdomainFreqSet) {
+				writer.println(freq.getText() + ", " + freq.getFrequency());
 			}
 			
 			writer.close();
