@@ -32,8 +32,8 @@ import java.util.Scanner;
 
 public class Crawler extends WebCrawler {
     private final static Pattern FILTERS = Pattern.compile(".*(\\.(css|js|bmp|gif|jpe?g|png|tiff?|mid|mp2|mp3|mp4"
-														+ "|wav|avi|mov|mpeg|ram|m4v|ppt?|pdf|ps|rm|smil|wmv|swf|tgz|war"
-														+ "|webm|tar|wma|zip?|rar|gz|xz|bz|lz|7z|dmg|xls|xlsx))$");
+														+ "|wav|avi|mov|mpeg|ram|m4v|ppt|pptx|pdf|ps|rm|smil|wmv|swf|tgz|war"
+														+ "|uai|webm|tar|wma|zip?|rar|gz|xz|bz|lz|7z|dmg|xls|xlsx))$");
 	public final static Pattern TRAPS = Pattern.compile("^http://(archive|calendar)\\.ics\\.uci\\.edu/.*");
 	public final static Pattern DOMAIN = Pattern.compile("^http://.*\\.ics\\.uci\\.edu/.*");
     static ArrayList<String> urlList = new ArrayList<String>();
