@@ -13,6 +13,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+//import java.net.MalformedURLException;
+//import java.net.URL;
 
 import edu.uci.ics.crawler4j.crawler.CrawlConfig;
 import edu.uci.ics.crawler4j.crawler.CrawlController;
@@ -27,6 +29,7 @@ import edu.uci.ics.crawler4j.url.WebURL;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
 import java.util.Iterator;
 import java.util.Scanner;
 
@@ -35,7 +38,8 @@ public class Crawler extends WebCrawler {
 														+ "|wav|avi|mov|mpeg|ram|m4v|ppt|pptx|pdf|ps|rm|smil|wmv|swf|tgz|war"
 														+ "|uai|webm|tar|wma|zip?|rar|gz|xz|bz|lz|7z|dmg|xls|xlsx))$");
 	public final static Pattern TRAPS = Pattern.compile("^http://(archive|calendar)\\.ics\\.uci\\.edu/.*");
-	public final static Pattern DOMAIN = Pattern.compile("^http://.*\\.ics\\.uci\\.edu/.*");
+	public final static Pattern ICSDOMAIN = Pattern.compile("^http://.*\\.ics\\.uci\\.edu/.*");
+	public static Pattern DOMAIN;
 	public final static Pattern DUTTGROUP = Pattern.compile("^.*duttgroup\\.ics\\.uci\\.edu.*");
     static ArrayList<String> urlList = new ArrayList<String>();
     
@@ -55,6 +59,25 @@ public class Crawler extends WebCrawler {
 	private static boolean crawlTest = false;
 	private static boolean fetching = false;
 	
+	public static String getHost(String url){
+	    if(url == null || url.length() == 0)
+	        return "";
+
+	    int doubleslash = url.indexOf("//");
+	    if(doubleslash == -1)
+	        doubleslash = 0;
+	    else
+	        doubleslash += 2;
+
+	    int end = url.indexOf('/', doubleslash);
+	    end = end >= 0 ? end : url.length();
+
+	    int port = url.indexOf(':', doubleslash);
+	    end = (port > 0 && port < end) ? port : end;
+
+	    return url.substring(doubleslash, end);
+	}
+	
 	/**
 	 * This method is for testing purposes only. It does not need to be used
 	 * to answer any of the questions in the assignment. However, it must
@@ -65,42 +88,48 @@ public class Crawler extends WebCrawler {
 	 */
 	public static Collection<String> crawl(String seedURL) {
 		// TODO implement me
-//        int numberOfCrawlers = 1;
-//
-//        CrawlConfig config = new CrawlConfig();
-//        //config.setCrawlStorageFolder(crawlStorageFolder);
-//        config.setUserAgentString("UCI Inf141-CS121 crawler 50765033");
-//        config.setPolitenessDelay(600);
-//
-//        /*
-//         * Instantiate the controller for this crawl.
-//         */
-//        PageFetcher pageFetcher = new PageFetcher(config);
-//        RobotstxtConfig robotstxtConfig = new RobotstxtConfig();
-//        RobotstxtServer robotstxtServer = new RobotstxtServer(robotstxtConfig, pageFetcher);
-//        
-//        try{
-//        	CrawlController controller = new CrawlController(config, pageFetcher, robotstxtServer);
-//        	/*
-//             * For each crawl, you need to add some seed urls. These are the first
-//             * URLs that are fetched and then the crawler starts following links
-//             * which are found in these pages
-//             */
-//            //controller.addSeed("http://www.ics.uci.edu/~lopes/");
-//            //controller.addSeed("http://www.ics.uci.edu/~welling/");
-//            controller.addSeed("http://www.ics.uci.edu/");
-//
-//            /*
-//             * Start the crawl. This is a blocking operation, meaning that your code
-//             * will reach the line after this only when crawling is finished.
-//             */
-//            controller.start(Crawler.class, numberOfCrawlers);
-//            
-//        }
-//        catch(Exception e)
-//        {
-//        	
-//        };
+		DOMAIN = Pattern.compile("^.*" + getHost(seedURL) + ".*");
+		crawlTest = true;
+        int numberOfCrawlers = 8;
+
+        CrawlConfig config = new CrawlConfig();
+        //config.setCrawlStorageFolder(crawlStorageFolder);
+//        config.setUserAgentString("UCI Inf141-CS121 crawler 50765033 79422112");
+        config.setUserAgentString("crawlTest");
+        config.setPolitenessDelay(600);
+        config.setResumableCrawling(false);
+//        config.setMaxPagesToFetch(200);
+        config.setCrawlStorageFolder(crawlStorageFolder);
+
+        /*
+         * Instantiate the controller for this crawl.
+         */
+        PageFetcher pageFetcher = new PageFetcher(config);
+        RobotstxtConfig robotstxtConfig = new RobotstxtConfig();
+        RobotstxtServer robotstxtServer = new RobotstxtServer(robotstxtConfig, pageFetcher);
+        
+        try{
+        	CrawlController controller = new CrawlController(config, pageFetcher, robotstxtServer);
+        	/*
+             * For each crawl, you need to add some seed urls. These are the first
+             * URLs that are fetched and then the crawler starts following links
+             * which are found in these pages
+             */
+            //controller.addSeed("http://www.ics.uci.edu/~lopes/");
+            //controller.addSeed("http://www.ics.uci.edu/~welling/");
+            controller.addSeed(seedURL);
+
+            /*
+             * Start the crawl. This is a blocking operation, meaning that your code
+             * will reach the line after this only when crawling is finished.
+             */
+            controller.start(Crawler.class, numberOfCrawlers);
+            
+        }
+        catch(Exception e)
+        {
+			e.printStackTrace();
+        };
 
         
 		
@@ -208,10 +237,16 @@ public class Crawler extends WebCrawler {
 	@Override
 	public void visit(Page page) {
 	    String url = page.getWebURL().getURL();
-	    urlList.add(url);
 	    if(!crawlTest) {
 	    	++uniqueCount;
-		    String subdomain = url.substring(7, url.indexOf(".edu") + 4);
+	    	String subdomain = getHost(url);
+//			try {
+//				subdomain = new URL(url).getHost();
+//			} catch (MalformedURLException e1) {
+//				// TODO Auto-generated catch block
+//				e1.printStackTrace();
+//			}
+//		    String subdomain = url.substring(7, url.indexOf(".edu") + 4);
 //		    String subdomain = url.substring(url.indexOf("http://") + 7, url.indexOf(".edu") - url.indexOf("http://") + 4);
 		    Integer subdomainCount = subdomainFreqMap.get(subdomain);
 		    if(subdomainCount == null){
@@ -262,6 +297,8 @@ public class Crawler extends WebCrawler {
 				} catch (FileNotFoundException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
+				} catch (Exception e){
+					e.printStackTrace();
 				}
 		        //I chose to store the token frequencies in a map first because checking for existing words, adding new ones
 		        //	or incrementing are all O(1) operations
@@ -287,6 +324,19 @@ public class Crawler extends WebCrawler {
 		       System.out.println("crawlCount: " + ++crawlCount);
 		    }
 	    }
+	    else{
+		    urlList.add(url);
+//		    String subdomain = url.substring(7, url.indexOf(".edu") + 4);
+	    	String subdomain = getHost(url);
+//			try {
+//				subdomain = new URL(url).getHost();
+//			} catch (MalformedURLException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+		    System.out.println("\nURL: " + url);
+		    System.out.println("Subdomain: " + subdomain);
+	    }
 	    
 	}
 	
@@ -294,6 +344,12 @@ public class Crawler extends WebCrawler {
 	@Override
 	public boolean shouldVisit(Page referringPage, WebURL url) {
         String href = url.getURL().toLowerCase();
+        if(!crawlTest){
+        	return !FILTERS.matcher(href).matches()
+                    && !TRAPS.matcher(href).matches()
+                    && ICSDOMAIN.matcher(href).matches()
+                    && !DUTTGROUP.matcher(href).matches();
+        }
         return !FILTERS.matcher(href).matches()
                && !TRAPS.matcher(href).matches()
                && DOMAIN.matcher(href).matches()
@@ -355,7 +411,11 @@ public class Crawler extends WebCrawler {
 		try {
 			PrintWriter writer = new PrintWriter(answerFile);
 			writer.println("Question 1: How much time did it take to crawl the entire domain?");
-			writer.println("\t" + totalTime);
+//			writer.println("\t" + totalTime);
+			writer.println("\t" + String.format("%d hours, %d minutes, %d seconds", 
+							            		TimeUnit.MILLISECONDS.toHours(totalTime),
+							            		TimeUnit.MILLISECONDS.toMinutes(totalTime) - TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(totalTime)),
+							            		TimeUnit.MILLISECONDS.toSeconds(totalTime) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(totalTime))));
 			writer.println("Question 2: How many unique pages did you find in the entire domain?");
 			writer.println("\t" + uniqueCount);
 			//	This questions will be answered separately on SubDomains.txt

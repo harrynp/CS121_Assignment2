@@ -20,7 +20,7 @@ public class CrawlerController {
 //        config.setUserAgentString("UCI Inf141-CS121 crawler 50765033 79422112");
       config.setUserAgentString("test");
         config.setPolitenessDelay(1200);
-        config.setResumableCrawling(false);
+        config.setResumableCrawling(true);
         config.setMaxDepthOfCrawling(-1);
         //Test only 5 pages
 //        config.setMaxPagesToFetch(5);
@@ -60,7 +60,7 @@ public class CrawlerController {
         }
         catch(Exception e)
         {
-        	
+			e.printStackTrace();
         };
 
         
